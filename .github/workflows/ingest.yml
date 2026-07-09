@@ -33,6 +33,8 @@ jobs:
 
       - name: Commit result + leaderboard
         # Only commit when a new result file appeared (accept path).
+        # Pull --rebase before push so concurrency-serialized runs don't lose
+        # updates when a prior ingest already advanced main.
         run: |
           if git diff --quiet -- results/ leaderboard.json; then
             echo "No result changes (rejected or no-op) — skipping commit."
@@ -42,4 +44,5 @@ jobs:
           git config user.email "bench-results-bot@users.noreply.github.com"
           git add results/ leaderboard.json
           git commit -m "[skip ci] ingest: accept result"
+          git pull --rebase origin main
           git push
