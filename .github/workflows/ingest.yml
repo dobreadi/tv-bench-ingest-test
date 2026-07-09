@@ -1,0 +1,44 @@
+# Validate + commit a published sweep result.
+# Trigger: repository_dispatch (event_type: bench-result) with client_payload =
+# the UNCHANGED publish schema (same as CF POST /api/results body).
+#
+# Reject ≠ workflow failure: invalid payloads log and exit 0.
+name: ingest
+
+on:
+  repository_dispatch:
+    types: [bench-result]
+
+concurrency:
+  group: results-ingest
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ingest client_payload
+        id: ingest
+        env:
+          # GitHub Actions exposes the dispatch payload as github.event.client_payload
+          CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
+          QUOTA_N: "50"
+        run: node scripts/ingest.mjs
+
+      - name: Commit result + leaderboard
+        # Only commit when a new result file appeared (accept path).
+        run: |
+          if git diff --quiet -- results/ leaderboard.json; then
+            echo "No result changes (rejected or no-op) — skipping commit."
+            exit 0
+          fi
+          git config user.name "bench-results-bot"
+          git config user.email "bench-results-bot@users.noreply.github.com"
+          git add results/ leaderboard.json
+          git commit -m "[skip ci] ingest: accept result"
+          git push
