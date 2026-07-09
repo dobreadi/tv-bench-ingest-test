@@ -140,5 +140,35 @@
     "device": null,
     "browser": null,
     "deviceLabel": null
+  },
+  {
+    "id": "01KX37H9F5TG181SQD8CZR37QA",
+    "createdAt": "2026-07-09 10:42:19",
+    "app": "react",
+    "sweepType": "full",
+    "domain": "raf",
+    "flags": {
+      "hero": "1"
+    },
+    "sweepConfig": null,
+    "frames": 1000,
+    "fps": 58.2,
+    "p50": 16.7,
+    "p95": 20.1,
+    "max": 41,
+    "stalls16": 12,
+    "stalls33": 3,
+    "cv": 0.08,
+    "hitches": 4,
+    "hitchMax": 45,
+    "hitchLostMs": 80,
+    "cluster33Max": 2,
+    "jumps": 1,
+    "jumpMaxPx": 3,
+    "localPace": 0.11,
+    "build": null,
+    "device": null,
+    "browser": null,
+    "deviceLabel": "pages-redeploy-proof"
   }
 ]
