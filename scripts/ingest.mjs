@@ -207,11 +207,26 @@ function main() {
     reject("invalid json");
   }
 
-  // repository_dispatch may wrap as { client_payload } or be the payload itself
-  const payload =
-    body && typeof body === "object" && body.client_payload !== undefined
-      ? body.client_payload
-      : body;
+  // Transport unwrap:
+  //   1) Actions may pass the dispatch body as { client_payload: … }
+  //   2) GitHub caps client_payload at 10 top-level keys, so the publisher
+  //      nests the unchanged schema under { result: <publish payload> }.
+  //   3) Flat payloads (≤10 keys, e.g. minimal fixtures) are also accepted.
+  let payload = body;
+  if (payload && typeof payload === "object" && payload.client_payload !== undefined) {
+    payload = payload.client_payload;
+  }
+  if (
+    payload &&
+    typeof payload === "object" &&
+    !Array.isArray(payload) &&
+    payload.result !== undefined &&
+    typeof payload.result === "object" &&
+    !Array.isArray(payload.result) &&
+    typeof payload.result.app === "string"
+  ) {
+    payload = payload.result;
+  }
 
   const v = validateResult(payload);
   if (v.error) reject(v.error);

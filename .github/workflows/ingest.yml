@@ -1,6 +1,7 @@
 # Validate + commit a published sweep result.
-# Trigger: repository_dispatch (event_type: bench-result) with client_payload =
-# the UNCHANGED publish schema (same as CF POST /api/results body).
+# Trigger: repository_dispatch (event_type: bench-result) with
+#   client_payload: { result: <UNCHANGED publish schema> }
+# Nested under `result` because GitHub caps client_payload at 10 top-level keys.
 #
 # Reject ≠ workflow failure: invalid payloads log and exit 0.
 name: ingest
