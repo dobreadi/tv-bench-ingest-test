@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 /**
  * Ingest one repository_dispatch client_payload:
- *   validate → quota → write results/<ulid>.json → regenerate leaderboard.json
+ *   validate → quota → write results/<ulid>.json
+ *   (leaderboard regenerated locally; deferred to post-rebase in Actions)
+ *
+ * CLI:
+ *   node scripts/ingest.mjs                         # ingest CLIENT_PAYLOAD
+ *   node scripts/ingest.mjs --regenerate-leaderboard
  *
  * Exit codes:
  *   0 — accepted OR rejected (reject ≠ workflow failure; reason logged)
@@ -216,6 +221,10 @@ function main() {
   if (payload && typeof payload === "object" && payload.client_payload !== undefined) {
     payload = payload.client_payload;
   }
+  // typeof null === "object" — reject before touching .app (avoids TypeError).
+  if (payload && typeof payload === "object" && !Array.isArray(payload) && payload.result === null) {
+    reject("result is null");
+  }
   if (
     payload &&
     typeof payload === "object" &&
@@ -242,8 +251,14 @@ function main() {
   const row = toStoredRow(id, createdAt, r);
   const file = path.join(RESULTS, `${id}.json`);
   writeFileSync(file, JSON.stringify(row, null, 2) + "\n");
-  const n = regenerateLeaderboard();
-  console.log(`ACCEPT: wrote results/${id}.json createdAt=${createdAt} leaderboard=${n} rows`);
+  // In Actions, leaderboard is regenerated AFTER git pull --rebase (see ingest.yml)
+  // so concurrent accepts cannot clobber each other's board rows.
+  if (process.env.GITHUB_ACTIONS) {
+    console.log(`ACCEPT: wrote results/${id}.json createdAt=${createdAt} (leaderboard deferred)`);
+  } else {
+    const n = regenerateLeaderboard();
+    console.log(`ACCEPT: wrote results/${id}.json createdAt=${createdAt} leaderboard=${n} rows`);
+  }
   // Emit for the workflow commit step
   if (process.env.GITHUB_OUTPUT) {
     writeFileSync(process.env.GITHUB_OUTPUT, `id=${id}\nfile=results/${id}.json\n`, { flag: "a" });
@@ -254,6 +269,12 @@ function main() {
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   try {
+    // CLI: regenerate leaderboard from results/ (used post-rebase by ingest.yml).
+    if (process.argv.includes("--regenerate-leaderboard")) {
+      const n = regenerateLeaderboard();
+      console.log(`regenerated leaderboard.json (${n} rows)`);
+      process.exit(0);
+    }
     main();
   } catch (err) {
     console.error("INGEST ERROR:", err);

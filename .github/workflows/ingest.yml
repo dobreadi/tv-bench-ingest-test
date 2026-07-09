@@ -4,6 +4,15 @@
 # Nested under `result` because GitHub caps client_payload at 10 top-level keys.
 #
 # Reject ≠ workflow failure: invalid payloads log and exit 0.
+#
+# Accept path is conflict-proof under burst concurrency:
+#   1) sync to true origin/main
+#   2) write + commit only results/<ulid>.json
+#   3) pull --rebase
+#   4) regenerate leaderboard.json from full results/
+#   5) commit leaderboard + push
+#   6) explicitly dispatch pages.yml (workflow_dispatch bypasses GITHUB_TOKEN
+#      recursion block; ingest commits keep [skip ci])
 name: ingest
 
 on:
@@ -16,6 +25,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   ingest:
@@ -23,26 +33,49 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Sync to latest main
+        run: git fetch origin main && git reset --hard origin/main
+
       - name: Ingest client_payload
         id: ingest
         env:
           # GitHub Actions exposes the dispatch payload as github.event.client_payload
           CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
-          QUOTA_N: "2"
+          QUOTA_N: "50"
         run: node scripts/ingest.mjs
 
-      - name: Commit result + leaderboard
-        # Only commit when a new result file appeared (accept path).
-        # Pull --rebase before push so concurrency-serialized runs don't lose
-        # updates when a prior ingest already advanced main.
+      - name: Commit result + regenerate leaderboard
+        id: commit
+        # Only commit when ingest accepted (emits outputs.file).
+        # Result file first → rebase → regenerate leaderboard → push.
         run: |
-          if git diff --quiet -- results/ leaderboard.json; then
-            echo "No result changes (rejected or no-op) — skipping commit."
+          FILE="${{ steps.ingest.outputs.file }}"
+          if [ -z "$FILE" ]; then
+            echo "No accept (rejected or no-op) — skipping commit."
+            echo "accepted=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git config user.name "bench-results-bot"
           git config user.email "bench-results-bot@users.noreply.github.com"
-          git add results/ leaderboard.json
+          # 1) Commit only the new result — leaderboard is regenerated after rebase
+          #    so concurrent accepts cannot clobber each other's board rows.
+          git add "$FILE"
           git commit -m "[skip ci] ingest: accept result"
+          # 2) Rebase onto whatever landed while we were ingesting
           git pull --rebase origin main
+          # 3) Regenerate from the full post-rebase results/
+          node scripts/ingest.mjs --regenerate-leaderboard
+          git add leaderboard.json
+          if git diff --cached --quiet; then
+            echo "leaderboard unchanged after regenerate"
+          else
+            git commit -m "[skip ci] ingest: regenerate leaderboard"
+          fi
           git push
+          echo "accepted=true" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger Pages redeploy
+        if: steps.commit.outputs.accepted == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main

@@ -1,0 +1,16 @@
+# Minimal stub for re-evidence: prove ingest dispatches pages.yml.
+# Full GHES pages.yml deploys site/; throwaway only needs workflow_dispatch.
+name: pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stub Pages redeploy
+        run: echo "pages.yml triggered via workflow_dispatch (throwaway stub)"
