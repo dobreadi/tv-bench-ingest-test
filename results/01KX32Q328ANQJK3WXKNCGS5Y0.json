@@ -1,0 +1,37 @@
+{
+  "id": "01KX32Q328ANQJK3WXKNCGS5Y0",
+  "createdAt": "2026-07-09 09:18:06",
+  "app": "react",
+  "sweepType": "full",
+  "domain": "raf",
+  "flags": {
+    "hero": "1"
+  },
+  "sweepConfig": null,
+  "frames": 1000,
+  "fps": 60,
+  "p50": 16.5,
+  "p95": 18,
+  "max": 33,
+  "stalls16": 10,
+  "stalls33": 2,
+  "cv": null,
+  "hitches": 5,
+  "hitchMax": 40,
+  "hitchLostMs": null,
+  "cluster33Max": null,
+  "jumps": null,
+  "jumpMaxPx": null,
+  "localPace": 0.1,
+  "cvBase": null,
+  "cvRef": null,
+  "device": null,
+  "browser": null,
+  "deviceLabel": "throwaway-test",
+  "build": "testsha1",
+  "hidden": 0,
+  "grade": {
+    "tier": "ok",
+    "label": "OK"
+  }
+}
