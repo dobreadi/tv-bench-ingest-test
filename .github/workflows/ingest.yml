@@ -28,7 +28,7 @@ jobs:
         env:
           # GitHub Actions exposes the dispatch payload as github.event.client_payload
           CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
-          QUOTA_N: "50"
+          QUOTA_N: "2"
         run: node scripts/ingest.mjs
 
       - name: Commit result + leaderboard
