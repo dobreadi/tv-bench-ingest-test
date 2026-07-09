@@ -84,5 +84,33 @@
     "device": null,
     "browser": null,
     "deviceLabel": null
+  },
+  {
+    "id": "01KX33M8K0MHEV9YRZ1ADEPKVP",
+    "createdAt": "2026-07-09 09:34:02",
+    "app": "quota-app",
+    "sweepType": "full",
+    "domain": "raf",
+    "flags": {},
+    "sweepConfig": null,
+    "frames": 100,
+    "fps": 30,
+    "p50": 16,
+    "p95": 20,
+    "max": 40,
+    "stalls16": 1,
+    "stalls33": 0,
+    "cv": null,
+    "hitches": 0,
+    "hitchMax": 0,
+    "hitchLostMs": null,
+    "cluster33Max": null,
+    "jumps": null,
+    "jumpMaxPx": null,
+    "localPace": 0.05,
+    "build": "q",
+    "device": null,
+    "browser": null,
+    "deviceLabel": null
   }
 ]
